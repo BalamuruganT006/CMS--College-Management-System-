@@ -1,0 +1,32 @@
+# NetBeans
+nbproject/private/
+nbproject/private.properties
+nbproject/project.properties
+nbproject/build-impl.xml
+nbproject/genfiles.properties
+nbproject/*.js
+nbproject/*.xml~
+nbproject/private/
+build/
+*.class
+*.jar
+*.war
+
+# Env / secrets
+.env
+
+# Logs / temp
+*.log
+logs/
+*.tmp
+~$*
+.DS_Store
+Thumbs.db
+
+# IDE droppings
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.metadata/

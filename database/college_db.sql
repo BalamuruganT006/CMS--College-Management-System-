@@ -1,0 +1,416 @@
+-- College Management System - MySQL 8 schema + seed data
+-- Run in MySQL Workbench or: mysql -u root -p < college_db.sql
+
+CREATE DATABASE IF NOT EXISTS college_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE college_management;
+
+CREATE TABLE department (
+    department_id INT AUTO_INCREMENT PRIMARY KEY,
+    dept_name VARCHAR(100) NOT NULL,
+    hod_name VARCHAR(100)
+);
+
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('ADMIN','FACULTY','STUDENT') NOT NULL,
+    linked_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE student (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    roll_no VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    dob DATE,
+    gender ENUM('Male','Female','Other'),
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(15),
+    address VARCHAR(255),
+    department_id INT,
+    year_of_study INT,
+    admission_date DATE DEFAULT (CURRENT_DATE),
+    FOREIGN KEY (department_id) REFERENCES department(department_id)
+);
+
+CREATE TABLE faculty (
+    faculty_id INT AUTO_INCREMENT PRIMARY KEY,
+    emp_code VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(15),
+    department_id INT,
+    designation VARCHAR(50),
+    joining_date DATE,
+    FOREIGN KEY (department_id) REFERENCES department(department_id)
+);
+
+CREATE TABLE course (
+    course_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_code VARCHAR(20) UNIQUE NOT NULL,
+    course_name VARCHAR(100) NOT NULL,
+    credits INT,
+    semester INT,
+    department_id INT,
+    FOREIGN KEY (department_id) REFERENCES department(department_id)
+);
+
+CREATE TABLE faculty_course (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    faculty_id INT,
+    course_id INT,
+    FOREIGN KEY (faculty_id) REFERENCES faculty(faculty_id),
+    FOREIGN KEY (course_id) REFERENCES course(course_id)
+);
+
+CREATE TABLE attendance (
+    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    course_id INT,
+    attendance_date DATE NOT NULL,
+    status ENUM('Present','Absent') NOT NULL,
+    marked_by INT,
+    FOREIGN KEY (student_id) REFERENCES student(student_id),
+    FOREIGN KEY (course_id) REFERENCES course(course_id),
+    FOREIGN KEY (marked_by) REFERENCES faculty(faculty_id),
+    UNIQUE KEY unique_attendance (student_id, course_id, attendance_date)
+);
+
+CREATE TABLE exam (
+    exam_id INT AUTO_INCREMENT PRIMARY KEY,
+    exam_name VARCHAR(100) NOT NULL,
+    course_id INT,
+    exam_date DATE,
+    max_marks INT DEFAULT 100,
+    FOREIGN KEY (course_id) REFERENCES course(course_id)
+);
+
+CREATE TABLE marks (
+    marks_id INT AUTO_INCREMENT PRIMARY KEY,
+    exam_id INT,
+    student_id INT,
+    marks_obtained DECIMAL(5,2),
+    grade VARCHAR(5),
+    FOREIGN KEY (exam_id) REFERENCES exam(exam_id),
+    FOREIGN KEY (student_id) REFERENCES student(student_id),
+    UNIQUE KEY unique_marks (exam_id, student_id)
+);
+
+CREATE TABLE fee (
+    fee_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    total_amount DECIMAL(10,2) NOT NULL,
+    paid_amount DECIMAL(10,2) DEFAULT 0,
+    due_date DATE,
+    paid_date DATE,
+    status ENUM('Paid','Partial','Unpaid') DEFAULT 'Unpaid',
+    FOREIGN KEY (student_id) REFERENCES student(student_id)
+);
+
+-- Seed data ------------------------------------------------------
+
+INSERT INTO department (dept_name, hod_name) VALUES
+('Computer Science', 'Dr. A. Kumar'),
+('Electronics', 'Dr. R. Mehta'),
+('Mechanical', 'Dr. S. Pillai');
+
+-- Default admin login: admin / admin123  (salted SHA-256 hash, format salt:hash)
+INSERT INTO users (username, password, role, linked_id) VALUES
+('admin', '7f3a9c1e5b2d8f40a6c4e2b09d1357f8:bb675af7c8af60a4c98ebebb77e0c8e7ff3f389fd750f8359b60fd6bab85f410', 'ADMIN', NULL);
+
+INSERT INTO faculty (emp_code, name, email, phone, department_id, designation, joining_date) VALUES
+('EMP0001', 'Dr. A. Kumar', 'akumar@college.edu', '9800000001', 1, 'Professor', '2015-06-01'),
+('EMP0002', 'Prof. R. Mehta', 'rmehta@college.edu', '9800000002', 2, 'Associate Professor', '2017-07-15');
+
+INSERT INTO users (username, password, role, linked_id) VALUES
+('akumar', '7f3a9c1e5b2d8f40a6c4e2b09d1357f8:bb675af7c8af60a4c98ebebb77e0c8e7ff3f389fd750f8359b60fd6bab85f410', 'FACULTY', 1);
+
+-- Student data: Placement II YEAR DATA.xlsx (132 CSE II year students)
+-- Logins: username = Reg No, password = welcome123
+INSERT INTO student (roll_no, name, dob, gender, email, phone, address, department_id, year_of_study, admission_date) VALUES
+('73152313001', 'AARTHI K', NULL, NULL, 'aarthikcse2427@ksrce.ac.in', '6374437337', NULL, 1, 2, '2024-08-01'),
+('73152313002', 'ABISECK D', NULL, NULL, 'abiseckdcse2427@ksrce.ac.in', '9342747327', NULL, 1, 2, '2024-08-01'),
+('73152313003', 'ADITYA V', NULL, NULL, 'adityavcse2427@ksrce.ac.in', '6380007564', NULL, 1, 2, '2024-08-01'),
+('73152313004', 'AJAY B', NULL, NULL, 'ajaybcse2427@ksrce.ac.in', '8344548686', NULL, 1, 2, '2024-08-01'),
+('73152313005', 'AKILANI I', NULL, NULL, 'akilanicse2427@ksrce.ac.in', '7200576476', NULL, 1, 2, '2024-08-01'),
+('73152313006', 'ANANDHA KUMARAN M S', NULL, NULL, 'anandhakumaranmscse2427@ksrce.ac.in', '9566892647', NULL, 1, 2, '2024-08-01'),
+('73152313007', 'ANANTHU N', NULL, NULL, 'ananthuncse2427@ksrce.ac.in', '7418840748', NULL, 1, 2, '2024-08-01'),
+('73152313008', 'ANUSRI S', NULL, NULL, 'anusriscse2427@ksrce.ac.in', '6380329525', NULL, 1, 2, '2024-08-01'),
+('73152313009', 'ARUL M', NULL, NULL, 'arulmcse2427@ksrce.ac.in', '8072709046', NULL, 1, 2, '2024-08-01'),
+('73152313010', 'ASWINTHRAJ DEVARAJ', NULL, NULL, 'aswinthrajdevarajcse2427@ksrce.ac.in', '6369585965', NULL, 1, 2, '2024-08-01'),
+('73152313011', 'BAARHAVI M D', NULL, NULL, 'baarhavimdcse2427@ksrce.ac.in', '6369163774', NULL, 1, 2, '2024-08-01'),
+('73152313012', 'BALAMURUGAN T', NULL, NULL, 'balamurugantcse2427@ksrce.ac.in', '6381767535', NULL, 1, 2, '2024-08-01'),
+('73152313013', 'BHARANI M', NULL, NULL, 'bharanimcse2427@ksrce.ac.in', '9962983012', NULL, 1, 2, '2024-08-01'),
+('73152313014', 'BHARANIDHARAN R', NULL, NULL, 'bharanidharanrcse2427@ksrce.ac.in', '9597704329', NULL, 1, 2, '2024-08-01'),
+('73152313015', 'BHARATH V', NULL, NULL, 'bharathvcse2427@ksrce.ac.in', '8838354569', NULL, 1, 2, '2024-08-01'),
+('73152313016', 'BHAVAGEETHA S', NULL, NULL, 'bhavageethascse2427@ksrce.ac.in', '9629159333', NULL, 1, 2, '2024-08-01'),
+('73152313017', 'CHANDRAPRADEEP R', NULL, NULL, 'chandrapradeeprcse2427@ksrce.ac.in', '9047353386', NULL, 1, 2, '2024-08-01'),
+('73152313018', 'CHERALATHAN B N', NULL, NULL, 'cheralathanbncse2427@ksrce.ac.in', '8668180041', NULL, 1, 2, '2024-08-01'),
+('73152313019', 'DEENADHAYALAN A', NULL, NULL, NULL, '8667525669', NULL, 1, 2, '2024-08-01'),
+('73152313020', 'DEENATHAYALAN P', NULL, NULL, 'deenathayalanpcse2427@ksrce.ac.in', '6383421621', NULL, 1, 2, '2024-08-01'),
+('73152313021', 'DEEPANA M', NULL, NULL, 'deepanamcse2427@ksrce.ac.in', '8870754453', NULL, 1, 2, '2024-08-01'),
+('73152313022', 'DEVAPRASATH J', NULL, NULL, 'devaprasathjcse2427@ksrce.ac.in', '8778125316', NULL, 1, 2, '2024-08-01'),
+('73152313023', 'DHANUSHPRIYAN T', NULL, NULL, 'dhanushpriyantcse2427@ksrce.ac.in', '9342469794', NULL, 1, 2, '2024-08-01'),
+('73152313024', 'DHARSANKUMAR R K', NULL, NULL, 'dharsankumarrkcse2427@ksrce.ac.in', '7339022060', NULL, 1, 2, '2024-08-01'),
+('73152313025', 'DHARSHINI E', NULL, NULL, 'dharshiniecse2427@ksrce.ac.in', '9500560294', NULL, 1, 2, '2024-08-01'),
+('73152313026', 'DHARSHINI J', NULL, NULL, 'dharshinijcse2427@ksrce.ac.in', '8072048353', NULL, 1, 2, '2024-08-01'),
+('73152313027', 'DHARSHINI V', NULL, NULL, 'dharshinivcse2427@ksrce.ac.in', '9384492791', NULL, 1, 2, '2024-08-01'),
+('73152313028', 'DHILIPKUMAR M', NULL, NULL, 'dhilipkumarmcse2427@ksrce.ac.in', '8940739141', NULL, 1, 2, '2024-08-01'),
+('73152313029', 'DHIVAGAR P R', NULL, NULL, 'dhivagarprcse2427@ksrce.ac.in', '7339224113', NULL, 1, 2, '2024-08-01'),
+('73152313030', 'DINESH KUMAR S', NULL, NULL, 'dineshkumarscse2427@ksrce.ac.in', '9344923793', NULL, 1, 2, '2024-08-01'),
+('73152313031', 'DIVYA M', NULL, NULL, 'divyamcse2427@ksrce.ac.in', '6381835760', NULL, 1, 2, '2024-08-01'),
+('73152313032', 'GAYATHRI K', NULL, NULL, 'gayathrikcse2427@ksrce.ac.in', '6374148401', NULL, 1, 2, '2024-08-01'),
+('73152313033', 'GISHNU B', NULL, NULL, 'gishnubcse2427@ksrce.ac.in', '6381120253', NULL, 1, 2, '2024-08-01'),
+('73152313034', 'GOKUL PRASATH R', NULL, NULL, 'gokulprasathrcse2427@ksrce.ac.in', '8220389470', NULL, 1, 2, '2024-08-01'),
+('73152313035', 'GOPIKA M', NULL, NULL, 'gopikamcse2427@ksrce.ac.in', '9042625270', NULL, 1, 2, '2024-08-01'),
+('73152313036', 'GOPIKA P', NULL, NULL, 'gopikapcse2427@ksrce.ac.in', '9080352239', NULL, 1, 2, '2024-08-01'),
+('73152313037', 'GOPIKA R', NULL, NULL, 'gopikarcse2427@gmail.com', '9894859889', NULL, 1, 2, '2024-08-01'),
+('73152313038', 'GOWRINATH S', NULL, NULL, 'gowrinathscse2427@gmail.com', '9597898379', NULL, 1, 2, '2024-08-01'),
+('73152313039', 'GOWSHIGAN T', NULL, NULL, 'gowshigantcse2427@ksrce.ac.in', '9361688990', NULL, 1, 2, '2024-08-01'),
+('73152313040', 'GOWTHAM M', NULL, NULL, 'gowthammcse2427@ksrce.ac.in', '9578081165', NULL, 1, 2, '2024-08-01'),
+('73152313041', 'HARISHKUMAR D', NULL, NULL, 'harishkumardcse2427@ksrce.ac.in', '6383261753', NULL, 1, 2, '2024-08-01'),
+('73152313042', 'HARSHAVARDINI T', NULL, NULL, 'harshavardinitcse2427@ksrce.ac.in', '6374491354', NULL, 1, 2, '2024-08-01'),
+('73152313043', 'HEMASHRI T K', NULL, NULL, 'hemashrimtkcse2427@ksrce.ac.in', '6369489001', NULL, 1, 2, '2024-08-01'),
+('73152313044', 'IMMANUEL FRANKLIN S', NULL, NULL, 'immanuelfranklinscse22427@ksrce.ac.in', '9791621615', NULL, 1, 2, '2024-08-01'),
+('73152313045', 'JAYASUDHAN N', NULL, NULL, 'jayasudhanncse2427@ksrce.ac.in', '8489206436', NULL, 1, 2, '2024-08-01'),
+('73152313046', 'JEEVITH K', NULL, NULL, 'jeevithkcse2427@ksrce.ac.in', '9342430387', NULL, 1, 2, '2024-08-01'),
+('73152313047', 'JEEVITHA P', NULL, NULL, 'jeevithapcse2427@ksrce.ac.in', '9952741466', NULL, 1, 2, '2024-08-01'),
+('73152313048', 'JEGAN D', NULL, NULL, 'jegandcse2427@ksrce.ac.in', '9342640878', NULL, 1, 2, '2024-08-01'),
+('73152313049', 'JOTHILAKSHMI M', NULL, NULL, 'jothilakshmimcse2427@ksrce.ac.in', '7339028579', NULL, 1, 2, '2024-08-01'),
+('73152313050', 'KALAIYARASI S', NULL, NULL, 'kalaiyarasiscse2427@ksrce.ac.in', '8838122147', NULL, 1, 2, '2024-08-01'),
+('73152313051', 'KAMALESH V', NULL, NULL, 'kamaleshvcse2427@ksrce.ac.in', '8608928772', NULL, 1, 2, '2024-08-01'),
+('73152313052', 'KARTHI K', NULL, NULL, 'karthikcse2427@ksrce.ac.in', '8248146153', NULL, 1, 2, '2024-08-01'),
+('73152313053', 'KAVIDHARSHINI S', NULL, NULL, 'kavidharshiniscse2427@ksrce.ac.in', '8610881590', NULL, 1, 2, '2024-08-01'),
+('73152313054', 'KAVINESHAN K', NULL, NULL, 'kavineshankcse2427@ksrce.ac.in', '9344093349', NULL, 1, 2, '2024-08-01'),
+('73152313055', 'KAVIYARASAN S', NULL, NULL, 'kaviyarasanscse2427@ksrce.ac.in', '6383923092', NULL, 1, 2, '2024-08-01'),
+('73152313056', 'KEERTHIKA G', NULL, NULL, 'keerthikagcse2427@ksrce.ac.in', '9025412645', NULL, 1, 2, '2024-08-01'),
+('73152313057', 'KEERTHIKA K', NULL, NULL, 'keerthikakcse2427@ksrce.ac.in', '9159948717', NULL, 1, 2, '2024-08-01'),
+('73152313058', 'KEERTHIKA P', NULL, NULL, 'keerthikapcse2427@ksrce.ac.in', '7010110727', NULL, 1, 2, '2024-08-01'),
+('73152313059', 'KIRUTHIKA P', NULL, NULL, 'kiruthikapcse2427@ksrce.ac.in', '9361202450', NULL, 1, 2, '2024-08-01'),
+('73152313060', 'KIRUTHIKKAILASH S', NULL, NULL, 'kiruthikkailashscse2427@ksrce.ac.in', '9994472411', NULL, 1, 2, '2024-08-01'),
+('73152313061', 'KISHORE R', NULL, NULL, 'kishorercse2427@ksrce.ac.in', '8110810448', NULL, 1, 2, '2024-08-01'),
+('73152313062', 'KISHORE KUMAR M', NULL, NULL, NULL, '9442969578', NULL, 1, 2, '2024-08-01'),
+('73152313063', 'KOKILA V', NULL, NULL, 'kokilavcse2427@ksrce.ac.in', '9944754651', NULL, 1, 2, '2024-08-01'),
+('73152313064', 'KRISHNA KUMAR K N', NULL, NULL, 'KrishnaKumarkncse2427@ksrce.ac.in', '9790502187', NULL, 1, 2, '2024-08-01'),
+('73152313065', 'LAVANYA K', NULL, NULL, 'lavanyakcse2427@ksrce.ac.in', '8838895928', NULL, 1, 2, '2024-08-01'),
+('73152313066', 'LOGESH J', NULL, NULL, 'logeshjcse2427@ksrce.ac.in', '8825476695', NULL, 1, 2, '2024-08-01'),
+('73152313067', 'LOKITH V', NULL, NULL, 'lokithvcse2427@ksrce.ac.in', '8015118079', NULL, 1, 2, '2024-08-01'),
+('73152313068', 'MANEESH ADHITHYA S', NULL, NULL, 'maneeshadhithyascse2427@ksrce.ac.in', '9788657300', NULL, 1, 2, '2024-08-01'),
+('73152313069', 'MANORANJITH D', NULL, NULL, 'Manoranjithdcse2427@ksrce.ac.in', '9025199507', NULL, 1, 2, '2024-08-01'),
+('73152313070', 'MD NAUFAL M', NULL, NULL, 'mdnaufalmcse2427@ksrce.ac.in', '9842884758', NULL, 1, 2, '2024-08-01'),
+('73152313071', 'MIRUTHULA K', NULL, NULL, 'miruthulakcse2427@ksrce.ac.in', '8610041599', NULL, 1, 2, '2024-08-01'),
+('73152313072', 'MOGESWARAN P', NULL, NULL, 'mogeswaranpcse2427@ksrce.ac.in', '9789755506', NULL, 1, 2, '2024-08-01'),
+('73152313073', 'MOHAMMAD RAYYAAN JAMIL', NULL, NULL, 'mohammadrayyaanjamilcse2427@ksrce.ac.in', '6206063556', NULL, 1, 2, '2024-08-01'),
+('73152313074', 'MOHAMMED ASHIK M', NULL, NULL, 'mohammedashikmcse2427@ksrce.ac.in', '6369373271', NULL, 1, 2, '2024-08-01'),
+('73152313075', 'MOUNEESHWARAN B', NULL, NULL, 'mouneeshwaranbcse2427@ksrce.ac.in', '9025856165', NULL, 1, 2, '2024-08-01'),
+('73152313076', 'MUGADHARSHINI E', NULL, NULL, 'mugadharshiniecse2427@ksrce.ac.in', '6374541621', NULL, 1, 2, '2024-08-01'),
+('73152313077', 'MUHILAN S', NULL, NULL, 'muhilanscse2427@ksrce.ac.in', '7806897639', NULL, 1, 2, '2024-08-01'),
+('73152313078', 'MUKESH S', NULL, NULL, 'mukeshscse2427@ksrce.ac.in', '9042781929', NULL, 1, 2, '2024-08-01'),
+('73152313080', 'NATRAYAN N', NULL, NULL, 'natrayanncse2427@ksrce.ac.in', '6379273231', NULL, 1, 2, '2024-08-01'),
+('73152313081', 'NAVEEN V', NULL, NULL, 'naveenvcse2427@ksrce.ac.in', '7845454045', NULL, 1, 2, '2024-08-01'),
+('73152313082', 'NITESH R P', NULL, NULL, 'niteshrpcse2427@ksrce.ac.in', '6374092484', NULL, 1, 2, '2024-08-01'),
+('73152313083', 'NITHISH T', NULL, NULL, 'nithishtcse2427@ksrce.ac.in', '9342925484', NULL, 1, 2, '2024-08-01'),
+('73152313084', 'NITHIYAN S', NULL, NULL, 'nithiyanscse2427@ksrce.ac.in', '8072299885', NULL, 1, 2, '2024-08-01'),
+('73152313085', 'OVIYA P', NULL, NULL, 'oviyapcse2427@ksrce.ac.in', '8925548422', NULL, 1, 2, '2024-08-01'),
+('73152313086', 'PRAGADEESHWARAN S', NULL, NULL, 'pragadeeshwaranscse2427@ksrce.ac.in', '7867964468', NULL, 1, 2, '2024-08-01'),
+('73152313087', 'PRAGATHI R', NULL, NULL, 'pragathircse2427@ksrce.ac.in', '6380028818', NULL, 1, 2, '2024-08-01'),
+('73152313088', 'PRANEETHA C', NULL, NULL, 'praneethaccse2427@ksrce.ac.in', '9865597647', NULL, 1, 2, '2024-08-01'),
+('73152313089', 'PRAVEEN K', NULL, NULL, 'praveenkcse2427@ksrce.ac.in', '6381796344', NULL, 1, 2, '2024-08-01'),
+('73152313090', 'PRIYADHARSHINI K', NULL, NULL, 'priyadharshinikcse2427@ksrce.ac.in', '9043703248', NULL, 1, 2, '2024-08-01'),
+('73152313091', 'PRIYANKA S', NULL, NULL, 'priyankascse2427@ksrce.ac.in', '8825788084', NULL, 1, 2, '2024-08-01'),
+('73152313092', 'RAJARAJAN R', NULL, NULL, 'rajarajanrcse2427@ksrce.ac.in', '6374102792', NULL, 1, 2, '2024-08-01'),
+('73152313093', 'RAJKUMAR G', NULL, NULL, 'rajkumargcse2427@ksrce.ac.in', '9080229045', NULL, 1, 2, '2024-08-01'),
+('73152313094', 'RAMYA S', NULL, NULL, 'ramyascse2427@ksrce.ac.in', '8056495754', NULL, 1, 2, '2024-08-01'),
+('73152313095', 'RAVINDER SINGH', NULL, NULL, 'ravindersinghcse2427@ksrce.ac.in', '7006540818', NULL, 1, 2, '2024-08-01'),
+('73152313096', 'RITHISH V N', NULL, NULL, 'rithishvncse2427@ksrce.ac.in', '9363636011', NULL, 1, 2, '2024-08-01'),
+('73152313097', 'RIYASATH AAKIL S', NULL, NULL, 'riyasathaakilscse2427@ksrce.ac.in', '7867956587', NULL, 1, 2, '2024-08-01'),
+('73152313098', 'SAIKRISHNAN K R', NULL, NULL, 'saikrishnankrcse2427@ksrce.ac.in', '9345734268', NULL, 1, 2, '2024-08-01'),
+('73152313099', 'SAKKTHISREE SV', NULL, NULL, 'sakkthisreesvcse2427@ksrce.ac.in', '9043724051', NULL, 1, 2, '2024-08-01'),
+('73152313100', 'SAMIKSHA M', NULL, NULL, 'samikshamcse2427@ksrce.ac.in', '6369666283', NULL, 1, 2, '2024-08-01'),
+('73152313101', 'SANGAMITHA P', NULL, NULL, 'sangamithapcse2427@ksrce.ac.in', '7010699283', NULL, 1, 2, '2024-08-01'),
+('73152313102', 'SANJAY G', NULL, NULL, 'sanjaygcse2427@ksrce.ac.in', '6374831716', NULL, 1, 2, '2024-08-01'),
+('73152313103', 'SAVITHA D', NULL, NULL, 'savithadcse2427@ksrce.ac.in', '7806875686', NULL, 1, 2, '2024-08-01'),
+('73152313104', 'SHAMYUKTHA M', NULL, NULL, 'shamyukthamcse2427@ksrce.ac.in', '6379337205', NULL, 1, 2, '2024-08-01'),
+('73152313105', 'SHANMUGAM B', NULL, NULL, 'Shanmugambcse2427@ksrce.ac.in', '9381204226', NULL, 1, 2, '2024-08-01'),
+('73152313106', 'SHANMUGANATHAN T', NULL, NULL, 'shanmuganathantcse2427@ksrce.ac.in', '6379872138', NULL, 1, 2, '2024-08-01'),
+('73152313107', 'SHANMUGAVADIVU A', NULL, NULL, 'shanmugavadivuacse2427@ksrce.ac.in', '9043842924', NULL, 1, 2, '2024-08-01'),
+('73152313108', 'SHARAVANNAN M', NULL, NULL, 'sharavannanmcse2427@ksrce.ac.in', '7904168749', NULL, 1, 2, '2024-08-01'),
+('73152313109', 'SHAYAMALA DEVI V', NULL, NULL, 'shayamaladevivcse2427@ksrce.ac.in', '9940880779', NULL, 1, 2, '2024-08-01'),
+('73152313110', 'SIBIRAGAVAN D', NULL, NULL, 'sibiragavandcse2427@ksrce.ac.in', '6374073116', NULL, 1, 2, '2024-08-01'),
+('73152313111', 'SINDHUMATHI A', NULL, NULL, 'sindhumathiacse2427@ksrce.ac.in', '6380066180', NULL, 1, 2, '2024-08-01'),
+('73152313112', 'SONIKA G', NULL, NULL, 'sonikagcse2427@ksrce.ac.in', '8531001508', NULL, 1, 2, '2024-08-01'),
+('73152313113', 'SONIKA SHARMA', NULL, NULL, 'sonikasharmacse2427@ksrce.ac.in', '6005017224', NULL, 1, 2, '2024-08-01'),
+('73152313114', 'SOWMIYA R', NULL, NULL, 'sowmiyarcse2427@ksrce.ac.in', '9123538056', NULL, 1, 2, '2024-08-01'),
+('73152313115', 'SRIMATHI G', NULL, NULL, 'srimathigcse2427@ksrce.ac.in', '8072025276', NULL, 1, 2, '2024-08-01'),
+('73152313116', 'SRIRAM S', NULL, NULL, 'sriramscse2427@ksrce.ac.in', '8438052380', NULL, 1, 2, '2024-08-01'),
+('73152313117', 'SURIYA A', NULL, NULL, 'suriyaacse2427@ksrce.ac.in', '9344164325', NULL, 1, 2, '2024-08-01'),
+('73152313118', 'SWATHI T', NULL, NULL, 'swathitcse2427@ksrce.ac.in', '8610893380', NULL, 1, 2, '2024-08-01'),
+('73152313119', 'SWETHA T S', NULL, NULL, 'swethatscse2427@ksrce.ac.in', '7904433635', NULL, 1, 2, '2024-08-01'),
+('73152313120', 'SYED UMAR S', NULL, NULL, 'syedumarscse2427@ksrce.ac.in', '7338988721', NULL, 1, 2, '2024-08-01'),
+('73152313121', 'TAMILARASI M', NULL, NULL, 'tamilarasimcse2427@ksrce.ac.in', '6374185911', NULL, 1, 2, '2024-08-01'),
+('73152313122', 'TEENA S', NULL, NULL, 'teenascse2427@ksrce.ac.in', '7010507109', NULL, 1, 2, '2024-08-01'),
+('73152313123', 'UMA SANKARI K', NULL, NULL, 'umasankarikcse2427@ksrce.ac.in', '6379222844', NULL, 1, 2, '2024-08-01'),
+('73152313124', 'USHADEVI K', NULL, NULL, 'ushadevikcse2427@ksrce.ac.in', '7603863889', NULL, 1, 2, '2024-08-01'),
+('73152313125', 'VIGNESH G', NULL, NULL, 'vigneshgcse2427@ksrce.ac.in', '7094842435', NULL, 1, 2, '2024-08-01'),
+('73152313127', 'YAZHINI S', NULL, NULL, 'yazhiniscse2427@ksrce.ac.in', '6380411015', NULL, 1, 2, '2024-08-01'),
+('73152313128', 'YESWANTH M', NULL, NULL, 'yeswanthmcse2427@ksrce.ac.in', '8148374037', NULL, 1, 2, '2024-08-01'),
+('73152313501', 'KAVIN M', NULL, NULL, 'kavinkavin1654@gmail.com', '9092163746', NULL, 1, 2, '2024-08-01'),
+('73152313502', 'KESAVAN SITHAN', NULL, NULL, 'kesavansid@gmail.com', '8220823006', NULL, 1, 2, '2024-08-01'),
+('73152313504', 'MANICKAM R', NULL, NULL, 'manicka709@gmail.com', '8870640019', NULL, 1, 2, '2024-08-01'),
+('73152313505', 'MEIYARASU M', NULL, NULL, 'mmeiyarasu22@gmail.com', '6381043583', NULL, 1, 2, '2024-08-01'),
+('73152313506', 'POOVARASAN C', NULL, NULL, 'poovarasanc76@gmail.com', '8838516013', NULL, 1, 2, '2024-08-01'),
+('73152313507', 'VIJAY RAGAVAN A', NULL, NULL, 'avijayragavan06@gmail.com', '6374413749', NULL, 1, 2, '2024-08-01');
+
+INSERT INTO users (username, password, role, linked_id) VALUES
+('73152313001', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 1),
+('73152313002', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 2),
+('73152313003', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 3),
+('73152313004', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 4),
+('73152313005', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 5),
+('73152313006', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 6),
+('73152313007', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 7),
+('73152313008', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 8),
+('73152313009', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 9),
+('73152313010', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 10),
+('73152313011', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 11),
+('73152313012', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 12),
+('73152313013', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 13),
+('73152313014', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 14),
+('73152313015', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 15),
+('73152313016', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 16),
+('73152313017', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 17),
+('73152313018', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 18),
+('73152313019', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 19),
+('73152313020', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 20),
+('73152313021', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 21),
+('73152313022', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 22),
+('73152313023', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 23),
+('73152313024', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 24),
+('73152313025', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 25),
+('73152313026', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 26),
+('73152313027', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 27),
+('73152313028', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 28),
+('73152313029', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 29),
+('73152313030', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 30),
+('73152313031', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 31),
+('73152313032', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 32),
+('73152313033', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 33),
+('73152313034', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 34),
+('73152313035', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 35),
+('73152313036', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 36),
+('73152313037', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 37),
+('73152313038', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 38),
+('73152313039', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 39),
+('73152313040', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 40),
+('73152313041', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 41),
+('73152313042', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 42),
+('73152313043', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 43),
+('73152313044', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 44),
+('73152313045', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 45),
+('73152313046', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 46),
+('73152313047', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 47),
+('73152313048', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 48),
+('73152313049', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 49),
+('73152313050', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 50),
+('73152313051', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 51),
+('73152313052', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 52),
+('73152313053', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 53),
+('73152313054', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 54),
+('73152313055', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 55),
+('73152313056', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 56),
+('73152313057', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 57),
+('73152313058', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 58),
+('73152313059', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 59),
+('73152313060', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 60),
+('73152313061', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 61),
+('73152313062', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 62),
+('73152313063', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 63),
+('73152313064', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 64),
+('73152313065', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 65),
+('73152313066', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 66),
+('73152313067', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 67),
+('73152313068', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 68),
+('73152313069', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 69),
+('73152313070', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 70),
+('73152313071', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 71),
+('73152313072', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 72),
+('73152313073', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 73),
+('73152313074', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 74),
+('73152313075', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 75),
+('73152313076', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 76),
+('73152313077', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 77),
+('73152313078', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 78),
+('73152313080', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 79),
+('73152313081', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 80),
+('73152313082', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 81),
+('73152313083', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 82),
+('73152313084', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 83),
+('73152313085', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 84),
+('73152313086', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 85),
+('73152313087', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 86),
+('73152313088', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 87),
+('73152313089', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 88),
+('73152313090', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 89),
+('73152313091', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 90),
+('73152313092', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 91),
+('73152313093', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 92),
+('73152313094', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 93),
+('73152313095', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 94),
+('73152313096', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 95),
+('73152313097', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 96),
+('73152313098', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 97),
+('73152313099', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 98),
+('73152313100', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 99),
+('73152313101', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 100),
+('73152313102', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 101),
+('73152313103', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 102),
+('73152313104', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 103),
+('73152313105', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 104),
+('73152313106', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 105),
+('73152313107', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 106),
+('73152313108', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 107),
+('73152313109', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 108),
+('73152313110', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 109),
+('73152313111', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 110),
+('73152313112', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 111),
+('73152313113', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 112),
+('73152313114', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 113),
+('73152313115', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 114),
+('73152313116', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 115),
+('73152313117', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 116),
+('73152313118', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 117),
+('73152313119', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 118),
+('73152313120', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 119),
+('73152313121', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 120),
+('73152313122', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 121),
+('73152313123', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 122),
+('73152313124', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 123),
+('73152313125', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 124),
+('73152313127', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 125),
+('73152313128', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 126),
+('73152313501', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 127),
+('73152313502', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 128),
+('73152313504', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 129),
+('73152313505', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 130),
+('73152313506', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 131),
+('73152313507', 'c92e4a48b8eef3fe03472a9a591e507f:239eccdfeeb39f90e8f3ca6f0c4505bb7b15d8b5eaced343ac3cb6c46efa3a5f', 'STUDENT', 132);
+
+INSERT INTO course (course_code, course_name, credits, semester, department_id) VALUES
+('CS101', 'Java Programming', 4, 3, 1),
+('CS102', 'Data Structures', 4, 3, 1),
+('EC201', 'Digital Circuits', 3, 4, 2);
+
+INSERT INTO faculty_course (faculty_id, course_id) VALUES (1, 1), (1, 2), (2, 3);
+
+INSERT INTO exam (exam_name, course_id, exam_date, max_marks) VALUES
+('CS101 Midterm', 1, '2026-03-10', 100),
+('CS101 Final', 1, '2026-05-20', 100);
+
+INSERT INTO marks (exam_id, student_id, marks_obtained, grade) VALUES
+(1, 1, 88.00, 'A'), (1, 2, 92.00, 'A+');
+
+INSERT INTO fee (student_id, total_amount, paid_amount, due_date, status) VALUES
+(1, 50000.00, 50000.00, '2026-08-15', 'Paid'),
+(2, 50000.00, 20000.00, '2026-08-15', 'Partial'),
+(3, 48000.00, 0.00, '2026-08-15', 'Unpaid');
