@@ -1,0 +1,10 @@
+.git
+.gitignore
+nbproject/private
+build
+target
+*.war
+*.class
+.env
+.env.*
+README.md
